@@ -3,6 +3,13 @@ from typing import Type, Any, Optional, Union, Collection, TypeVar, Dict, Callab
 T = TypeVar("T", bound=Any)
 
 
+def safe_issubclass(sub: Type, base: Type) -> bool:
+    try:
+        return issubclass(sub, base)
+    except TypeError:
+        return False
+
+
 def transform_value(
     type_hooks: Dict[Type, Callable[[Any], Any]], cast: List[Type], target_type: Type, value: Any
 ) -> Any:
@@ -10,7 +17,7 @@ def transform_value(
         value = type_hooks[target_type](value)
     else:
         for cast_type in cast:
-            if issubclass(target_type, cast_type):
+            if safe_issubclass(target_type, cast_type):
                 value = target_type(value)
                 break
     if is_optional(target_type):
