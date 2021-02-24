@@ -16,6 +16,7 @@ from dacite.exceptions import (
     UnexpectedDataError,
     StrictUnionMatchError,
 )
+from dacite.rewrites import rewrite
 from dacite.types import (
     is_instance,
     is_generic_collection,
@@ -46,6 +47,10 @@ def from_dict(data_class: Type[T], data: Data, config: Optional[Config] = None) 
         data_class_hints = get_type_hints(data_class, globalns=config.forward_references)
     except NameError as error:
         raise ForwardReferenceError(str(error))
+    try:
+        data_class_annotated_hints = get_type_hints(data_class, globalns=config.forward_references, include_extras=True)
+    except NameError as error:
+        raise ForwardReferenceError(str(error))
     data_class_fields = get_fields(data_class)
     if config.strict:
         extra_fields = set(data.keys()) - {f.name for f in data_class_fields}
@@ -56,7 +61,7 @@ def from_dict(data_class: Type[T], data: Data, config: Optional[Config] = None) 
         field.type = data_class_hints[field.name]
         try:
             try:
-                field_data = data[field.name]
+                field_data = rewrite(data_class_annotated_hints[field.name], field, data)
                 transformed_value = transform_value(
                     type_hooks=config.type_hooks, cast=config.cast, target_type=field.type, value=field_data
                 )
