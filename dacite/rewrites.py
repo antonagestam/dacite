@@ -1,5 +1,6 @@
 from __future__ import annotations
-from dataclasses import Field
+
+from dataclasses import Field, MISSING
 from typing import Final
 
 from dacite.data import Data
@@ -46,13 +47,55 @@ del _CompositeFactory
 
 
 def extract(annotated: type) -> _FromMarker | _CompositeMarker:
-    item, = annotated.__metadata__
+    (item,) = annotated.__metadata__  # type: ignore[attr-defined]
     assert isinstance(item, (_FromMarker, _CompositeMarker))
     return item
 
 
 def rewrite(annotated: type, field: Field, data: Data) -> object:
+    if isinstance(field, RewriteField):
+        return field.marker.rewrite(data)
     if annotated == field.type:
         return data[field.name]
     marker = extract(annotated)
     return marker.rewrite(data)
+
+
+
+
+class RewriteField(Field):
+    marker: _FromMarker | _CompositeMarker
+
+
+class FromField(RewriteField):
+    def __init__(
+        self,
+        source: str,
+        default: object = MISSING,
+        default_factory: object = MISSING,
+        init: bool = True,
+        repr: bool = True,
+        hash: object = None,
+        compare: object = True,
+        metadata: object = None,
+    ) -> None:
+        super().__init__(  # type: ignore[call-arg]
+            default, default_factory, init, repr, hash, compare, metadata)
+        self.marker = _FromMarker(source)
+
+
+class CompositeField(RewriteField):
+    def __init__(
+        self,
+        *sources: str,
+        default: object = MISSING,
+        default_factory: object = MISSING,
+        init: bool = True,
+        repr: bool = True,
+        hash: object = None,
+        compare: bool = True,
+        metadata: object = None,
+    ) -> None:
+        super().__init__(  # type: ignore[call-arg]
+            default, default_factory, init, repr, hash, compare, metadata)
+        self.marker = _CompositeMarker(*sources)
