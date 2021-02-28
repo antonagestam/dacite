@@ -61,8 +61,6 @@ def rewrite(annotated: type, field: Field, data: Data) -> object:
     return marker.rewrite(data)
 
 
-
-
 class RewriteField(Field):
     marker: _FromMarker | _CompositeMarker
 
@@ -79,8 +77,7 @@ class FromField(RewriteField):
         compare: object = True,
         metadata: object = None,
     ) -> None:
-        super().__init__(  # type: ignore[call-arg]
-            default, default_factory, init, repr, hash, compare, metadata)
+        super().__init__(default, default_factory, init, repr, hash, compare, metadata)  # type: ignore[call-arg]
         self.marker = _FromMarker(source)
 
 
@@ -96,6 +93,5 @@ class CompositeField(RewriteField):
         compare: bool = True,
         metadata: object = None,
     ) -> None:
-        super().__init__(  # type: ignore[call-arg]
-            default, default_factory, init, repr, hash, compare, metadata)
+        super().__init__(default, default_factory, init, repr, hash, compare, metadata)  # type: ignore[call-arg]
         self.marker = _CompositeMarker(*sources)
